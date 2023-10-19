@@ -13,6 +13,6 @@ steps:
 - task: AzureCLI@2
   inputs:
     azureSubscription: 'et-svc-003'
-    scriptType: 'pscore'
+    scriptType: 'bash'
     scriptLocation: 'inlineScript'
-    inlineScript: az deployment group create -- ../funcApp.bicep --resource-group et-rg-003
+    inlineScript: az deployment group create --template-file ./bicepTemplate/funcApp.bicep --resource-group et-rg-003
