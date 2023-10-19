@@ -7,7 +7,6 @@ param appName string = 'et3sta${uniqueString(resourceGroup().id)}'
 ])
 param storageAccountType string = 'Standard_LRS'
 param location string = resourceGroup().location
-param appInsightsLocation string
 
 @allowed([
   'node'
@@ -94,7 +93,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: applicationInsightsName
-  location: appInsightsLocation
+  location: location
   kind: 'web'
   properties: {
     Application_Type: 'web'
