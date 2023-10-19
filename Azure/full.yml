@@ -4,38 +4,85 @@ parameters:
   environment: ''
   location: ''
   resourceGroup: ''
-
-
+ 
+ 
+# validation stage
+ 
 stages:
 - stage: validate_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
-  displayName: 'Validate ${{ parameters.templateFile }} in ${{ parameters.environment }} ${{ parameters.location }}'
+  displayName: 'validate ${{ parameters.templateFile }} in ${{ parameters.environment }}_${{ parameters.location }}'
+  dependsOn: ''
   jobs:
-  - job: validate
+  - job: validate_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+    displayName: validate_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
     steps:
-    - task: AzureCLI@2
+    - checkout: self
+      fetchDepth: 0
+    - task: gitversion/setup@0
       inputs:
-        azureSubscription: '${{ parameters.azureSubscription }}'
+        versionSpec: '5.12.0'
+    - task: gitversion/execute@0
+      inputs:
+        useConfigFile: true
+        configFilePath: 'gitversion.yml'
+    - task: replacetokens@5
+      inputs:
+        targetFiles: parameters/${{ parameters.environment }}/${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam
+        encoding: 'auto'
+        tokenPattern: 'default'
+        writeBOM: true
+        actionOnMissing: 'warn'
+        keepToken: true
+        actionOnNoFiles: 'fail'
+        enableTransforms: false
+        enableRecursion: false
+        useLegacyPattern: false
+        useLegacyEmptyFeature: false
+        enableTelemetry: false
+    - task: AzureCLI@2
+      displayName: 'what if templating'
+      inputs:
+        azureSubscription: ${{ parameters.azureSubscription }}
         scriptType: 'pscore'
         scriptLocation: 'inlineScript'
         inlineScript: |
           az deployment group what-if --template-file .\templates\${{ parameters.templateFile }}.bicep --parameters .\parameters\${{ parameters.environment }}\${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam --resource-group ${{ parameters.resourceGroup }}
+    - task: CopyFiles@2
+      displayName: Copy templates
+      inputs:
+        Contents: '$(System.DefaultWorkingDirectory)/templates/${{ parameters.templateFile }}.bicep'
+        TargetFolder:  $(Build.ArtifactStagingDirectory)/${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}/templates
+        flattenFolders: true
+    - task: CopyFiles@2
+      displayName: Copy parameters
+      inputs:
+        Contents: '$(System.DefaultWorkingDirectory)/parameters/${{ parameters.environment }}/${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam'
+        TargetFolder:  $(Build.ArtifactStagingDirectory)/${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}/parameters
+        flattenFolders: true
+    - publish: $(Build.ArtifactStagingDirectory)/${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+ 
+ 
+# Deploy stage
+ 
 - stage: deploy_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
-  displayName: 'Deploy ${{ parameters.templateFile }} in ${{ parameters.environment }} ${{ parameters.location }}'
+  displayName: 'deploy ${{ parameters.templateFile }} in ${{ parameters.environment }}_${{ parameters.location }}'
   condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
   dependsOn: validate_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
   jobs:
-  - deployment: deploy
-    environment: ${{ parameters.environment }}
+  - deployment: deploy_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+    environment: int
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: self
           - task: AzureCLI@2
+            displayName: 'Deploying to azure'
             inputs:
-              azureSubscription: '${{ parameters.azureSubscription }}'
+              workingDirectory: $(Agent.BuildDirectory)/${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+              azureSubscription: ${{ parameters.azureSubscription }}
               scriptType: 'pscore'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo 'Not yet deploying'
-                az deployment group create --template-file .\templates\${{ parameters.templateFile }}.bicep --parameters .\parameters\${{ parameters.environment }}\${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam --resource-group ${{ parameters.resourceGroup }}
+                ls -al 
+                az deployment group create --template-file  $(Agent.BuildDirectory)/${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}\templates\${{ parameters.templateFile }}.bicep --parameters  $(Agent.BuildDirectory)/${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}\parameters\${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam --resource-group ${{ parameters.resourceGroup }}
