@@ -1,0 +1,23 @@
+parameters:
+  azureSubscription: 'DEV AzureMSPTest'
+  registryName: 'azTraining'
+  moduleName: ''
+
+jobs:
+- deployment: publish_bicep_registry_module_${{ parameters.moduleName }}
+  displayName: 'Publish bicep registry module: ${{ parameters.moduleName }}'
+  environment: prd
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+        - task: AzureCLI@2
+          displayName: 'Publish ${{ parameters.moduleName }} module'
+          condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
+          inputs:
+            azureSubscription: '${{ parameters.azureSubscription }}'
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              az bicep publish --force --file .\module\${{ parameters.moduleName }}.bicep --target br:${{ parameters.registryName }}.azurecr.io/bicep/modules/${{ parameters.moduleName }}:v$(Build.SourceBranchName)

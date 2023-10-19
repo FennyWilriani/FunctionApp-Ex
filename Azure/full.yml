@@ -1,0 +1,41 @@
+parameters:
+  templateFile: 'main'
+  azureSubscription: ''
+  environment: ''
+  location: ''
+  resourceGroup: ''
+
+
+stages:
+- stage: validate_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+  displayName: 'Validate ${{ parameters.templateFile }} in ${{ parameters.environment }} ${{ parameters.location }}'
+  jobs:
+  - job: validate
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: '${{ parameters.azureSubscription }}'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az deployment group what-if --template-file .\templates\${{ parameters.templateFile }}.bicep --parameters .\parameters\${{ parameters.environment }}\${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam --resource-group ${{ parameters.resourceGroup }}
+- stage: deploy_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+  displayName: 'Deploy ${{ parameters.templateFile }} in ${{ parameters.environment }} ${{ parameters.location }}'
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
+  dependsOn: validate_${{ parameters.templateFile }}_${{ parameters.environment }}_${{ parameters.location }}
+  jobs:
+  - deployment: deploy
+    environment: ${{ parameters.environment }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: '${{ parameters.azureSubscription }}'
+              scriptType: 'pscore'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo 'Not yet deploying'
+                az deployment group create --template-file .\templates\${{ parameters.templateFile }}.bicep --parameters .\parameters\${{ parameters.environment }}\${{ parameters.templateFile }}_${{ parameters.location }}.bicepparam --resource-group ${{ parameters.resourceGroup }}
