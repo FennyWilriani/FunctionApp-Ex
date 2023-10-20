@@ -21,6 +21,7 @@ var applicationInsightsName = appName
 var applicationInsightsName2 = 'appName2'
 var storageAccountName = '${uniqueString(resourceGroup().id)}azfunctions'
 var functionWorkerRuntime = runtime
+var geolocation = resourceGroup().location
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
@@ -83,6 +84,18 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         {
           name: 'AvailabilityResults_InstrumentationKey'
           value: applicationInsights2.properties.InstrumentationKey
+        }
+        {
+          name: 'webtests'
+          value: 'https://et3sta4pfeg77aqngme.azurewebsites.net'
+        }
+        {
+          name: 'geolocation'
+          value: geolocation
+        }
+        {
+          name: 'FunctionAppName'
+          value: appName
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
