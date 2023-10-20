@@ -82,7 +82,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'AvailabilityResults_InstrumentationKey'
-          value: applicationInsights.properties.InstrumentationKey
+          value: applicationInsights2.properties.InstrumentationKey
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
