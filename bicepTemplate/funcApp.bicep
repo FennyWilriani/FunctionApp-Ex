@@ -18,7 +18,7 @@ param runtime string = 'node'
 var functionAppName = appName
 var hostingPlanName = appName
 var applicationInsightsName = appName
-var applicationInsightsName2 = appName
+var applicationInsightsName2 = 'blabla'
 var storageAccountName = '${uniqueString(resourceGroup().id)}azfunctions'
 var functionWorkerRuntime = runtime
 
