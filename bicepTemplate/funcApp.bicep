@@ -1,5 +1,5 @@
 param appName string = 'et3sta${uniqueString(resourceGroup().id)}'
-param appName2 string = 'et3sta${uniqueString(resourceGroup().id)}'
+
 @allowed([
   'Standard_LRS'
   'Standard_GRS'
@@ -18,7 +18,7 @@ param runtime string = 'node'
 var functionAppName = appName
 var hostingPlanName = appName
 var applicationInsightsName = appName
-var applicationInsightsName2 = appName2
+var applicationInsightsName2 = 'appName2'
 var storageAccountName = '${uniqueString(resourceGroup().id)}azfunctions'
 var functionWorkerRuntime = runtime
 
