@@ -18,6 +18,7 @@ param runtime string = 'node'
 var functionAppName = appName
 var hostingPlanName = appName
 var applicationInsightsName = appName
+var applicationInsightsName2 = appName
 var storageAccountName = '${uniqueString(resourceGroup().id)}azfunctions'
 var functionWorkerRuntime = runtime
 
@@ -80,6 +81,10 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: applicationInsights.properties.InstrumentationKey
         }
         {
+          name: 'AvailabilityResults_InstrumentationKey'
+          value: applicationInsights.properties.InstrumentationKey
+        }
+        {
           name: 'FUNCTIONS_WORKER_RUNTIME'
           value: functionWorkerRuntime
         }
@@ -93,6 +98,16 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: applicationInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    Request_Source: 'rest'
+  }
+}
+
+resource applicationInsights2 'Microsoft.Insights/components@2020-02-02' = {
+  name: applicationInsightsName2
   location: location
   kind: 'web'
   properties: {
